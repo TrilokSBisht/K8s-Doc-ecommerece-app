@@ -1,0 +1,104 @@
+pipeline {
+    agent any
+
+    options {
+        disableConcurrentBuilds()
+    }
+
+    environment {
+        DOCKERHUB_USER = 'triloksbisht'
+        IMAGE_NAME = 'ekart-ecomm-app'
+        NAMESPACE = 'ecommerce'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build Backend') {
+            steps {
+                sh '''
+                    docker build \
+                      -f backend/Dockerfile \
+                      -t $DOCKERHUB_USER/$IMAGE_NAME:backend-$BUILD_NUMBER .
+                '''
+            }
+        }
+
+        stage('Build Frontend') {
+            steps {
+                sh '''
+                    docker build \
+                      -t $DOCKERHUB_USER/$IMAGE_NAME:frontend-$BUILD_NUMBER \
+                      ./frontend
+                '''
+            }
+        }
+
+        stage('Push Images') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-creds',
+                        usernameVariable: 'DH_USER',
+                        passwordVariable: 'DH_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        echo "$DH_TOKEN" | docker login \
+                          -u "$DH_USER" --password-stdin
+
+                        docker push \
+                          $DOCKERHUB_USER/$IMAGE_NAME:backend-$BUILD_NUMBER
+
+                        docker push \
+                          $DOCKERHUB_USER/$IMAGE_NAME:frontend-$BUILD_NUMBER
+
+                        docker logout
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                withCredentials([
+                    file(
+                        credentialsId: 'kind-kubeconfig',
+                        variable: 'KUBECONFIG'
+                    )
+                ]) {
+                    sh '''
+                        kubectl get nodes
+
+                        kubectl set image deployment/backend \
+                          backend=$DOCKERHUB_USER/$IMAGE_NAME:backend-$BUILD_NUMBER \
+                          -n $NAMESPACE
+
+                        kubectl set image deployment/frontend \
+                          frontend=$DOCKERHUB_USER/$IMAGE_NAME:frontend-$BUILD_NUMBER \
+                          -n $NAMESPACE
+
+                        kubectl rollout status deployment/backend \
+                          -n $NAMESPACE --timeout=180s
+
+                        kubectl rollout status deployment/frontend \
+                          -n $NAMESPACE --timeout=180s
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Build, image push and Kubernetes deployment completed!'
+        }
+        failure {
+            echo 'Pipeline failed. Check the console output.'
+        }
+    }
+}
