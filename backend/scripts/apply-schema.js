@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 
 const fs = require('fs');
 const path = require('path');
@@ -6,7 +6,7 @@ const db = require('../db');
 
 const applySchema = async () => {
   try {
-    const schemaPath = path.join(__dirname, '..', 'db', 'schema.sql');
+    const schemaPath = path.join(__dirname, '..', '..', 'database', 'schema.sql');
     const schema = fs.readFileSync(schemaPath, 'utf8');
 
     await db.query(schema);

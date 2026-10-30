@@ -1,4 +1,5 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
 const path = require('path');
 const express = require('express');
@@ -14,12 +15,14 @@ const paymentRoutes = require('./routes/payments.routes');
 const paymentWebhookRoutes = require('./routes/paymentWebhooks.routes');
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('yamljs');
-const swaggerDocument = YAML.load('./docs/openapi.yaml');
+const swaggerDocument = YAML.load(
+  path.join(__dirname, '..', 'docs', 'openapi.yaml')
+);
 
 const app = express();
 
 const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
-const clientDistPath = path.join(__dirname, 'client', 'dist');
+const clientDistPath = path.join(__dirname, '..', 'frontend', 'dist');
 
 app.use(cors({
   origin: clientOrigin,
