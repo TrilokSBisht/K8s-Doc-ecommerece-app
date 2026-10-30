@@ -1,7 +1,7 @@
 const path = require('path');
+
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
-const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const db = require('./db');
@@ -29,7 +29,7 @@ app.use(cors({
   credentials: true
 }));
 
-app.use('/payments/webhook', express.raw({ type: 'application/json' }), paymentWebhookRoutes);
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }), paymentWebhookRoutes);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -60,13 +60,13 @@ app.get('/health/db', async (req, res) => {
   }
 });
 
-app.use('/auth', authRoutes);
-app.use('/oauth', oauthRoutes);
-app.use('/products', productRoutes);
-app.use('/users', userRoutes);
-app.use('/cart', cartRoutes);
-app.use('/orders', orderRoutes);
-app.use('/payments', paymentRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/oauth', oauthRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/payments', paymentRoutes);
 
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(clientDistPath));
